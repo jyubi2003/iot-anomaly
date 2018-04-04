@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 // eslint-disable-next-line
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
-import {LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
+//import {LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer} from 'recharts';
 // eslint-disable-next-line
 import injectTapEventPlugin from 'react-tap-event-plugin';
 import SelectField from 'material-ui/SelectField';
@@ -24,11 +24,48 @@ import Business from 'material-ui/svg-icons/communication/business';
 import ClearAll from 'material-ui/svg-icons/communication/clear-all';
 import Subheader from 'material-ui/Subheader';
 import {Tabs, Tab} from 'material-ui/Tabs';
+
+import _ from "underscore";
+import { format } from "d3-format";
+import moment from "moment";
+
+import Ring from "ringjs";
+
+import {
+    TimeSeries,
+    TimeRange,
+    TimeEvent,
+    Pipeline as pipeline,
+    Stream,
+    EventOut,
+    percentile
+} from "pondjs";
+
+import ChartContainer from "react-timeseries-charts";
+import ChartRow from "react-timeseries-charts";
+import Charts from "react-timeseries-charts";
+import YAxis from "react-timeseries-charts";
+import ScatterChart from "react-timeseries-charts";
+import BarChart from "react-timeseries-charts";
+import Resizable from "react-timeseries-charts";
+import Legend from "react-timeseries-charts";
+import styler from "react-timeseries-charts";
+
 // We can just import Slider or Range to reduce bundle size
 // import Slider from 'rc-slider/lib/Slider';
 // import Range from 'rc-slider/lib/Range';
 
+// Test data
+import monthlyJSON from "./total_traffic_6mo.json";
+
 import './index.css';
+
+// realtime
+const sec = 1000;
+const minute = 60 * sec;
+const hours = 60 * minute;
+const rate = 80;
+
 
 class ListNested extends React.Component {
   state = {
@@ -149,6 +186,212 @@ class TabArea extends React.Component {
 }
 
 // グラフエリア
+
+class realtime extends React.Component {
+  static displayName = "AggregatorDemo";
+
+  state = {
+    time: new Date(2015, 0, 1),
+    events: new Ring(200),
+    percentile50Out: new Ring(100),
+    percentile90Out: new Ring(100)
+  };
+
+  getNewEvent = t => {
+    const base = Math.sin(t.getTime() / 10000000) * 350 + 500;
+    return new TimeEvent(t, parseInt(base + Math.random() * 1000, 10));
+  };
+
+  componentDidMount() {
+    //
+    // Setup our aggregation pipelines
+    //
+
+    this.stream = new Stream();
+
+    pipeline()
+      .from(this.stream)
+      .windowBy("5m")
+      .emitOn("discard")
+      .aggregate({
+        value: { value: percentile(90) }
+      })
+      .to(EventOut, event => {
+        const events = this.state.percentile90Out;
+        events.push(event);
+        this.setState({ percentile90Out: events });
+      });
+
+    pipeline()
+      .from(this.stream)
+      .windowBy("5m")
+      .emitOn("discard")
+      .aggregate({
+        value: { value: percentile(50) }
+      })
+      .to(EventOut, event => {
+        const events = this.state.percentile50Out;
+        events.push(event);
+        this.setState({ percentile50Out: events });
+      });
+
+    //
+    // Setup our interval to advance the time and generate raw events
+    //
+
+    const increment = minute;
+    this.interval = setInterval(() => {
+      const t = new Date(this.state.time.getTime() + increment);
+      const event = this.getNewEvent(t);
+
+      // Raw events
+      const newEvents = this.state.events;
+      newEvents.push(event);
+      this.setState({ time: t, events: newEvents });
+
+      // Let our aggregators process the event
+      this.stream.addEvent(event);
+    }, rate);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.interval);
+  }
+
+  render() {
+    const latestTime = `${this.state.time}`;
+
+    const fiveMinuteStyle = {
+      value: {
+        normal: { fill: "#619F3A", opacity: 0.2 },
+        highlight: { fill: "619F3A", opacity: 0.5 },
+        selected: { fill: "619F3A", opacity: 0.5 }
+      }
+    };
+
+    const scatterStyle = {
+      value: {
+        normal: {
+          fill: "steelblue",
+          opacity: 0.5
+        }
+      }
+    };
+
+    //
+    // Create a TimeSeries for our raw, 5min and hourly events
+    //
+
+    const eventSeries = new TimeSeries({
+      name: "raw",
+      events: this.state.events.toArray()
+    });
+
+    const perc50Series = new TimeSeries({
+      name: "five minute perc50",
+      events: this.state.percentile50Out.toArray()
+    });
+
+    const perc90Series = new TimeSeries({
+      name: "five minute perc90",
+      events: this.state.percentile90Out.toArray()
+    });
+
+    // Timerange for the chart axis
+    const initialBeginTime = new Date(2015, 0, 1);
+    const timeWindow = 3 * hours;
+
+    let beginTime;
+    const endTime = new Date(this.state.time.getTime() + minute);
+    if (endTime.getTime() - timeWindow < initialBeginTime.getTime()) {
+      beginTime = initialBeginTime;
+    } else {
+      beginTime = new Date(endTime.getTime() - timeWindow);
+    }
+    const timeRange = new TimeRange(beginTime, endTime);
+
+    // Charts (after a certain amount of time, just show hourly rollup)
+    const charts = (
+      <Charts>
+        <BarChart
+          axis="y"
+          series={perc90Series}
+          style={fiveMinuteStyle}
+          columns={["value"]}
+        />
+        <BarChart
+          axis="y"
+          series={perc50Series}
+          style={fiveMinuteStyle}
+          columns={["value"]}
+        />
+        <ScatterChart axis="y" series={eventSeries} style={scatterStyle} />
+        </Charts>
+    );
+
+    const dateStyle = {
+      fontSize: 12,
+      color: "#AAA",
+      borderWidth: 1,
+      borderColor: "#F4F4F4"
+    };
+
+    const style = styler([
+      { key: "perc50", color: "#C5DCB7", width: 1, dashed: true },
+      { key: "perc90", color: "#DFECD7", width: 2 }
+    ]);
+
+    return (
+      <div>
+        <div className="row">
+          <div className="col-md-4">
+            <Legend
+              type="swatch"
+              style={style}
+              categories={[
+                {
+                  key: "perc50",
+                  label: "50th Percentile",
+                  style: { fill: "#C5DCB7" }
+                },
+                {
+                  key: "perc90",
+                  label: "90th Percentile",
+                  style: { fill: "#DFECD7" }
+                }
+              ]}
+            />
+          </div>
+          <div className="col-md-8">
+            <span style={dateStyle}>{latestTime}</span>
+          </div>
+        </div>
+        <hr />
+        <div className="row">
+          <div className="col-md-12">
+            <Resizable>
+              <ChartContainer timeRange={timeRange}>
+                <ChartRow height="150">
+                  <YAxis
+                    id="y"
+                    label="Value"
+                    min={0}
+                    max={1500}
+                    width="70"
+                    type="linear"
+                  />
+                  {charts}
+                </ChartRow>
+              </ChartContainer>
+            </Resizable>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+/*
 class SimpleAreaChart extends React.Component {
   render () {
     const currentSeries = this.props.series;
@@ -173,32 +416,260 @@ class SimpleAreaChart extends React.Component {
     );
   }
 }
+*/
 
-const data = [
-      {name: 'LAS1', 工場A: 4, 工場B: 2, amt: 6},
-      {name: 'LAS2', 工場A: 3, 工場B: 1, amt: 4},
-      {name: 'LAS3', 工場A: 2, 工場B: 7, amt: 9},
-      {name: 'LBS1', 工場A: 2, 工場B: 3, amt: 5},
-      {name: 'LBS2', 工場A: 1, 工場B: 4, amt: 5},
+// BarChart
+const trafficPoints = [];
+const interfacesJSON = require("./interface-traffic.json");
+const interfaceKey = "ornl-cr5::to_ornl_ip-a::standard";
+const days = interfacesJSON[interfaceKey].days;
+
+let max = 0;
+_.each(days, (value, day) => {
+    const dayOfMonth = Number(day);
+    const volIn = value.in;
+    const volOut = value.out;
+
+    // Max
+    max = Math.max(max, value.in);
+    max = Math.max(max, value.out);
+
+    trafficPoints.push([`2014-10-${dayOfMonth}`, volIn, volOut]);
+});
+
+const octoberTrafficSeries = new TimeSeries({
+    name: "October Traffic",
+    utc: false,
+    columns: ["index", "in", "out"],
+    points: trafficPoints
+});
+
+max /= 100;
+
+//
+// October 2014 net daily traffic for multiple interfaces
+//
+
+const netTrafficPoints = [];
+const interfaceKeys = [
+    "lbl-mr2::xe-8_3_0.911::standard",
+    "pnwg-cr5::111-10_1_4-814::sap",
+    "denv-cr5::to_denv-frgp(as14041)::standard"
 ];
+const octoberDays = interfacesJSON[interfaceKeys[0]].days;
 
-class SimpleBarChart extends React.Component {
-  render () {
+let maxTotalTraffic = 0;
+let minTotalTraffic = 0;
+_.each(octoberDays, (ignoreValue, day) => {
+    const dayOfMonth = Number(day);
+    const netTrafficForDay = [`2014-10-${dayOfMonth}`];
+    let maxDay = 0;
+    let minDay = 0;
+    _.each(interfaceKeys, interfaceKey => {
+        let value = interfacesJSON[interfaceKey].days[dayOfMonth];
+        let netTraffic = value.out - value.in;
+        netTrafficForDay.push(netTraffic);
+        if (netTraffic > 0) {
+            maxDay += netTraffic;
+        } else {
+            minDay += netTraffic;
+        }
+    });
+    maxTotalTraffic = Math.max(maxTotalTraffic, maxDay);
+    minTotalTraffic = Math.min(minTotalTraffic, minDay);
+    netTrafficPoints.push(netTrafficForDay);
+});
+
+const netTrafficColumnNames = ["index"];
+_.each(interfaceKeys, interfaceKey => {
+    netTrafficColumnNames.push(interfaceKey.split(":")[0]);
+});
+
+const octoberNetTrafficSeries = new TimeSeries({
+    name: "October Net Traffic",
+    utc: false,
+    columns: netTrafficColumnNames,
+    points: netTrafficPoints
+});
+
+// Correct for measurement error on October 10th
+maxTotalTraffic /= 150;
+minTotalTraffic /= 10;
+
+//
+// ESnet wide monthy traffic summary (part of 2014)
+//
+
+const routerData = {};
+_.each(monthlyJSON, router => {
+    const routerName = router["Router"];
+    if (routerName) {
+        routerData[routerName] = {
+            accepted: [],
+            delivered: []
+        };
+        _.each(router, (traffic, key) => {
+            if (key !== "Router") {
+                const month = key.split(" ")[0];
+                const type = key.split(" ")[1];
+                if (type === "Accepted") {
+                    routerData[routerName].accepted.push([month, traffic]);
+                } else if (type === "Delivered") {
+                    routerData[routerName].delivered.push([month, traffic]);
+                }
+            }
+        });
+    }
+});
+
+class volume extends React.Component {
+  static displayName = "VolumeExample";
+
+  state = {
+    timerange: octoberTrafficSeries.range(),
+    selection: null
+  };
+
+  handleTimeRangeChange = timerange => {
+    this.setState({ timerange });
+  };
+
+  render() {
+    /*
+
+    Styling the hard way
+    const style = {
+      in: {
+        normal: {fill: "#A5C8E1"},
+        highlighted: {fill: "#BFDFF6"},
+        selected: {fill: "#2DB3D1"},
+        muted: {fill: "#A5C8E1", opacity: 0.4}
+      }
+    };
+    const altStyle = {
+      out: {
+        normal: {fill: "#FFCC9E"},
+        highlighted: {fill: "#fcc593"},
+        selected: {fill: "#2DB3D1"},
+        muted: {fill: "#FFCC9E", opacity: 0.4}
+      }
+    };
+
+    const combinedStyle = {
+      in: {
+        normal: {fill: "#A5C8E1"},
+        highlighted: {fill: "#BFDFF6"},
+        selected: {fill: "#2DB3D1"},
+        muted: {fill: "#A5C8E1", opacity: 0.4}
+      },
+      out: {
+        normal: {fill: "#FFCC9E"},
+        highlighted: {fill: "#fcc593"},
+        selected: {fill: "#2DB3D1"},
+        muted: {fill: "#FFCC9E", opacity: 0.4}
+      }
+    };
+    */
+
+    const style = styler([
+      { key: "in", color: "#A5C8E1", selected: "#2CB1CF" },
+      { key: "out", color: "#FFCC9E", selected: "#2CB1CF" },
+      {
+        key: netTrafficColumnNames[1],
+        color: "#A5C8E1",
+        selected: "#2CB1CF"
+      },
+      {
+        key: netTrafficColumnNames[2],
+        color: "#FFCC9E",
+        selected: "#2CB1CF"
+      },
+      {
+        key: netTrafficColumnNames[3],
+        color: "#DEB887",
+        selected: "#2CB1CF"
+      }
+    ]);
+
+    const formatter = format(".2s");
+    const selectedDate = this.state.selection
+      ? this.state.selection.event.index().toNiceString()
+      : "--";
+    const selectedValue = this.state.selection
+      ? `${formatter(+this.state.selection.event.value(this.state.selection.column))}b`
+      : "--";
+
+    const highlight = this.state.highlight;
+    let infoValues = [];
+    let infoNetValues = [];
+    if (highlight) {
+      const trafficText = `${formatter(highlight.event.get(highlight.column))}`;
+      infoValues = [{ label: "Traffic", value: trafficText }];
+      infoNetValues = [{ label: "Traffic " + highlight.column, value: trafficText }];
+    }
+
     return (
-      <div className="graph">
-        <p style={{textDecoration: "underline", fontSize: "1.0vw"}}>一週間のエラー発生件数</p>
-        <ResponsiveContainer width="100%" height="95%">
-          <BarChart data={data}
-            margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-            <XAxis dataKey="name"/>
-            <YAxis/>
-            <CartesianGrid strokeDasharray="3 3"/>
-            <Tooltip/>
-            <Legend />
-            <Bar dataKey="工場A" fill="#8884d8" />
-            <Bar dataKey="工場B" fill="#82ca9d" />
-          </BarChart>
-        </ResponsiveContainer>
+      <div>
+        <div className="row">
+          <div className="col-md-12">
+            <Resizable>
+              <ChartContainer
+                  timeRange={octoberTrafficSeries.range()}
+                  format="day"
+                  onBackgroundClick={() => this.setState({ selection: null })}
+              >
+                <ChartRow height="150">
+                  <YAxis
+                    id="traffic-volume"
+                    label="Traffic (B)"
+                    classed="traffic-in"
+                    min={0}
+                    max={max}
+                    width="70"
+                    type="linear"
+                  />
+                  <Charts>
+                    <BarChart
+                      axis="traffic-volume"
+                      style={style}
+                      size={10}
+                      offset={5.5}
+                      columns={["in"]}
+                      series={octoberTrafficSeries}
+                      highlighted={this.state.highlight}
+                      info={infoValues}
+                      infoTimeFormat="%m/%d/%y"
+                      onHighlightChange={highlight =>
+                          this.setState({ highlight })
+                      }
+                      selected={this.state.selection}
+                      onSelectionChange={selection =>
+                          this.setState({ selection })
+                      }
+                    />
+                    <BarChart
+                      axis="traffic-volume"
+                      style={style}
+                      size={10}
+                      offset={-5.5}
+                      columns={["out"]}
+                      series={octoberTrafficSeries}
+                      info={infoValues}
+                      highlighted={this.state.highlight}
+                      onHighlightChange={highlight =>
+                          this.setState({ highlight })
+                      }
+                      selected={this.state.selection}
+                      onSelectionChange={selection =>
+                          this.setState({ selection })
+                      }
+                    />
+                  </Charts>
+                </ChartRow>
+              </ChartContainer>
+            </Resizable>
+          </div>
+        </div>
       </div>
     );
   }
@@ -214,20 +685,12 @@ class GraphArea extends React.Component {
     return (
       <div className="graph-area">
         <div className="graph-low">
-          <SimpleAreaChart
-            series={currentSeries}
-          />
-          <SimpleAreaChart
-            series={currentSeries}
-          />
-          <SimpleAreaChart
-            series={currentSeries}
-          />
+          <realtime />
+          <realtime />
+          <realtime />
         </div>
         <div className="graph-low">
-          <SimpleAreaChart
-            series={currentSeries}
-          />
+          <realtime />
           <div className="meters">
             <div className="meter">
               <ReactSpeedometer
@@ -240,9 +703,7 @@ class GraphArea extends React.Component {
               />
             </div>
           </div>
-          <SimpleBarChart
-            series={currentSeries}
-          />
+          <volume />
         </div>
       </div>
     );
@@ -259,9 +720,9 @@ const series_0_0_0 = [
   {name: 'senser-1', data: [
     {category: '8:00', value: 0.2},
     {category: '8:01', value: 0.1},
-    {category: '8:02', value: 0.2},
+    {category: '8:02', value: 0.15},
     {category: '8:03', value: 0.3},
-    {category: '8:04', value: 0.4},
+    {category: '8:04', value: 0.45},
     {category: '8:05', value: 0.5},
     {category: '8:06', value: 0.6},
     {category: '8:07', value: 0.7},
@@ -424,7 +885,7 @@ class IotDemo extends React.Component {
     return (
       <MuiThemeProvider>
         <div className="iot-demo">
-          <AppBar 
+          <AppBar
             title="IoT 異常検知"
           />
           <div className="contents">
