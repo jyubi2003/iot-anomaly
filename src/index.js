@@ -47,9 +47,10 @@ import Charts from "react-timeseries-charts";
 import YAxis from "react-timeseries-charts";
 import ScatterChart from "react-timeseries-charts";
 import BarChart from "react-timeseries-charts";
+import LineChart from "react-timeseries-charts";
 import Resizable from "react-timeseries-charts";
 import Legend from "react-timeseries-charts";
-import styler from "react-timeseries-charts";
+import styler from "./styler.js";
 
 // We can just import Slider or Range to reduce bundle size
 // import Slider from 'rc-slider/lib/Slider';
@@ -187,9 +188,9 @@ class TabArea extends React.Component {
 
 // グラフエリア
 
-class realtime extends React.Component {
-  static displayName = "AggregatorDemo";
-
+class Realtime extends React.Component {
+/*  static displayName = "AggregatorDemo";
+*/
   state = {
     time: new Date(2015, 0, 1),
     events: new Ring(200),
@@ -300,7 +301,6 @@ class realtime extends React.Component {
     // Timerange for the chart axis
     const initialBeginTime = new Date(2015, 0, 1);
     const timeWindow = 3 * hours;
-
     let beginTime;
     const endTime = new Date(this.state.time.getTime() + minute);
     if (endTime.getTime() - timeWindow < initialBeginTime.getTime()) {
@@ -325,7 +325,6 @@ class realtime extends React.Component {
           style={fiveMinuteStyle}
           columns={["value"]}
         />
-        <ScatterChart axis="y" series={eventSeries} style={scatterStyle} />
         </Charts>
     );
 
@@ -341,50 +340,62 @@ class realtime extends React.Component {
       { key: "perc90", color: "#DFECD7", width: 2 }
     ]);
 
+    const data1 = {
+        name: "trafficc",
+        columns: ["time", "value"],
+        points: [
+            [1400425947000, 52],
+            [1400425948000, 18],
+            [1400425949000, 26],
+            [1400425950000, 93],
+            [1400425951000, 85],
+            [1400425952000, 64],
+            [1400425953000, 12],
+            [1400425954000, 43],
+            [1400425955000, 35],
+            [1400425956000, 86],
+            [1400425957000, 71],
+            [1400425958000, 55],
+        ]
+    };
+
+    const series1 = new TimeSeries(data1);
+
+    const data2 = {
+        name: "trafficc",
+        columns: ["time", "value"],
+        points: [
+            [1400425947000, 23],
+            [1400425948000, 31],
+            [1400425949000, 12],
+            [1400425950000, 42],
+            [1400425951000, 38],
+            [1400425952000, 26],
+            [1400425953000, 17],
+            [1400425954000, 4],
+            [1400425955000, 20],
+            [1400425956000, 16],
+            [1400425957000, 28],
+            [1400425958000, 32],
+        ]
+    };
+
+    const series2 = new TimeSeries(data2);
+
     return (
       <div>
         <div className="row">
           <div className="col-md-4">
-            <Legend
-              type="swatch"
-              style={style}
-              categories={[
-                {
-                  key: "perc50",
-                  label: "50th Percentile",
-                  style: { fill: "#C5DCB7" }
-                },
-                {
-                  key: "perc90",
-                  label: "90th Percentile",
-                  style: { fill: "#DFECD7" }
-                }
-              ]}
-            />
-          </div>
-          <div className="col-md-8">
-            <span style={dateStyle}>{latestTime}</span>
-          </div>
-        </div>
-        <hr />
-        <div className="row">
-          <div className="col-md-12">
-            <Resizable>
-              <ChartContainer timeRange={timeRange}>
-                <ChartRow height="150">
-                  <YAxis
-                    id="y"
-                    label="Value"
-                    min={0}
-                    max={1500}
-                    width="70"
-                    type="linear"
-                  />
-                  {charts}
-                </ChartRow>
-              </ChartContainer>
-            </Resizable>
-          </div>
+          <ChartContainer timeRange={series1.timerange()} width={800}>
+              <ChartRow height="200">
+                  <YAxis id="axis1" label="AUD" min={0.5} max={1.5} width="60" type="linear" format="$,.2f"/>
+                  <Charts>
+                      <LineChart axis="axis1" series={series1} column={["aud"]}/>
+                      <LineChart axis="axis2" series={series2} column={["euro"]}/>
+                  </Charts>
+                  <YAxis id="axis2" label="Euro" min={0.5} max={1.5} width="80" type="linear" format="$,.2f"/>
+              </ChartRow>
+          </ChartContainer>          </div>
         </div>
       </div>
     );
@@ -522,7 +533,7 @@ _.each(monthlyJSON, router => {
     }
 });
 
-class volume extends React.Component {
+class Volume extends React.Component {
   static displayName = "VolumeExample";
 
   state = {
@@ -535,9 +546,7 @@ class volume extends React.Component {
   };
 
   render() {
-    /*
-
-    Styling the hard way
+    /* Styling the hard way
     const style = {
       in: {
         normal: {fill: "#A5C8E1"},
@@ -546,6 +555,7 @@ class volume extends React.Component {
         muted: {fill: "#A5C8E1", opacity: 0.4}
       }
     };
+    */
     const altStyle = {
       out: {
         normal: {fill: "#FFCC9E"},
@@ -569,7 +579,6 @@ class volume extends React.Component {
         muted: {fill: "#FFCC9E", opacity: 0.4}
       }
     };
-    */
 
     const style = styler([
       { key: "in", color: "#A5C8E1", selected: "#2CB1CF" },
@@ -612,62 +621,6 @@ class volume extends React.Component {
       <div>
         <div className="row">
           <div className="col-md-12">
-            <Resizable>
-              <ChartContainer
-                  timeRange={octoberTrafficSeries.range()}
-                  format="day"
-                  onBackgroundClick={() => this.setState({ selection: null })}
-              >
-                <ChartRow height="150">
-                  <YAxis
-                    id="traffic-volume"
-                    label="Traffic (B)"
-                    classed="traffic-in"
-                    min={0}
-                    max={max}
-                    width="70"
-                    type="linear"
-                  />
-                  <Charts>
-                    <BarChart
-                      axis="traffic-volume"
-                      style={style}
-                      size={10}
-                      offset={5.5}
-                      columns={["in"]}
-                      series={octoberTrafficSeries}
-                      highlighted={this.state.highlight}
-                      info={infoValues}
-                      infoTimeFormat="%m/%d/%y"
-                      onHighlightChange={highlight =>
-                          this.setState({ highlight })
-                      }
-                      selected={this.state.selection}
-                      onSelectionChange={selection =>
-                          this.setState({ selection })
-                      }
-                    />
-                    <BarChart
-                      axis="traffic-volume"
-                      style={style}
-                      size={10}
-                      offset={-5.5}
-                      columns={["out"]}
-                      series={octoberTrafficSeries}
-                      info={infoValues}
-                      highlighted={this.state.highlight}
-                      onHighlightChange={highlight =>
-                          this.setState({ highlight })
-                      }
-                      selected={this.state.selection}
-                      onSelectionChange={selection =>
-                          this.setState({ selection })
-                      }
-                    />
-                  </Charts>
-                </ChartRow>
-              </ChartContainer>
-            </Resizable>
           </div>
         </div>
       </div>
@@ -685,12 +638,12 @@ class GraphArea extends React.Component {
     return (
       <div className="graph-area">
         <div className="graph-low">
-          <realtime />
-          <realtime />
-          <realtime />
+          <Realtime />
+          <Realtime />
+          <Realtime />
         </div>
         <div className="graph-low">
-          <realtime />
+          <Realtime />
           <div className="meters">
             <div className="meter">
               <ReactSpeedometer
@@ -703,7 +656,7 @@ class GraphArea extends React.Component {
               />
             </div>
           </div>
-          <volume />
+          <Volume />
         </div>
       </div>
     );
