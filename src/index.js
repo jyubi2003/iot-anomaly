@@ -38,7 +38,8 @@ import {
     Pipeline as pipeline,
     Stream,
     EventOut,
-    percentile
+    percentile,
+    Index
 } from "pondjs";
 
 import ChartContainer from "react-timeseries-charts";
@@ -382,20 +383,62 @@ class Realtime extends React.Component {
 
     const series2 = new TimeSeries(data2);
 
+    const data = [
+        ["2017-01-24 00:00", 0.01],
+        ["2017-01-24 01:00", 0.13],
+        ["2017-01-24 02:00", 0.07],
+        ["2017-01-24 03:00", 0.04],
+        ["2017-01-24 04:00", 0.33],
+        ["2017-01-24 05:00", 0.2],
+        ["2017-01-24 06:00", 0.08],
+        ["2017-01-24 07:00", 0.54],
+        ["2017-01-24 08:00", 0.95],
+        ["2017-01-24 09:00", 1.12],
+        ["2017-01-24 10:00", 0.66],
+        ["2017-01-24 11:00", 0.06],
+        ["2017-01-24 12:00", 0.3],
+        ["2017-01-24 13:00", 0.05],
+        ["2017-01-24 14:00", 0.5],
+        ["2017-01-24 15:00", 0.24],
+        ["2017-01-24 16:00", 0.02],
+        ["2017-01-24 17:00", 0.98],
+        ["2017-01-24 18:00", 0.46],
+        ["2017-01-24 19:00", 0.8],
+        ["2017-01-24 20:00", 0.39],
+        ["2017-01-24 21:00", 0.4],
+        ["2017-01-24 22:00", 0.39],
+        ["2017-01-24 23:00", 0.28]
+    ];
+
+    const series = new TimeSeries({
+        name: "hilo_rainfall",
+        columns: ["index", "precip"],
+        points: data.map(([d, value]) => [
+            Index.getIndexString("1h", new Date(d)),
+            value
+        ])
+    });
+
     return (
       <div>
         <div className="row">
           <div className="col-md-4">
-          <ChartContainer timeRange={series1.timerange()} width={800}>
-              <ChartRow height="200">
-                  <YAxis id="axis1" label="AUD" min={0.5} max={1.5} width="60" type="linear" format="$,.2f"/>
-                  <Charts>
-                      <LineChart axis="axis1" series={series1} column={["aud"]}/>
-                      <LineChart axis="axis2" series={series2} column={["euro"]}/>
-                  </Charts>
-                  <YAxis id="axis2" label="Euro" min={0.5} max={1.5} width="80" type="linear" format="$,.2f"/>
-              </ChartRow>
-          </ChartContainer>          </div>
+          <Resizable>
+              <ChartContainer timeRange={series.range()} >
+                  <ChartRow height="150">
+                      <Charts>
+                          <BarChart
+                              axis="rain"
+                              style={style}
+                              spacing={1}
+                              columns={["precip"]}
+                              series={series}
+                          />
+                      </Charts>
+                  </ChartRow>
+              </ChartContainer>
+          </Resizable>
+          </div>
         </div>
       </div>
     );

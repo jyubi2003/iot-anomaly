@@ -1,0 +1,106 @@
+
+
+比較ページ
+
+Javascript Graphs and Charts libraries
+http://socialcompare.com/en/comparison/javascript-graphs-and-charts-libraries
+　チャートライブラリの比較ページ
+
+Comparison of JavaScript charting libraries
+https://en.wikipedia.org/wiki/Comparison_of_JavaScript_charting_libraries
+　チャートライブラリの比較Wiki
+
+
+比較Q&Aとお勧めライブラリ
+
+What are the best JavaScript libraries for time series graphs?
+https://www.quora.com/What-are-the-best-JavaScript-libraries-for-time-series-graphs
+　比較Q&Aと回答
+
+What's a good JavaScript library for real-time charting?
+https://www.quora.com/Whats-a-good-JavaScript-library-for-real-time-charting
+　比較Q&Aと回答
+
+
+ライブラリ
+
+Google
+  Google Charts（★などない！）
+  https://developers.google.com/chart/
+    REACTではないので実装が大変そう
+    リアルタイムデータの流し込みがイマイチ良く分からない
+    外部データの取り込みのスタブがあるが、読込みタイミングはどうするのか。
+    ただ、本番はそうなる（データの発生がグラフの更新イベントを上げてくれるわけではない）
+    ので、この形式が正しいともいえる。イベント発生させて読み込みに行くのかなぁ。
+
+△react-google-charts（DL7,603）
+  https://www.npmjs.com/package/react-google-charts
+    REACTラッパー
+    デモ画面が少なく、デモの無いものは動作検証が必要だが、ラインチャートくらいは別に大丈夫でしょう
+    一定間隔毎にデータを取りに行く。描画し直しにならないといいけれど。
+
+D3
+  D3.js（★74,528）
+✖https://d3js.org/
+    おなじみD3.js
+    REACTからは使えない
+
+✖Rickshaw（★6,227）
+  http://code.shutterstock.com/rickshaw/
+    リアルタイム動作は可能だが、グラフの体裁はあまり凝れないかも
+    D3ベース。REACTでは使えない
+
+  reactd3（★189）
+✖http://www.reactd3.org/
+    たぶんD3のREACTラッパー（ちがうみたい）
+    ドキュメントが少なくてリアルタイムの実装が分からない
+
+〇React Easy Chart（★96）
+  https://rma-consulting.github.io/react-easy-chart/line-chart/index.html#updateData
+  　D3.jsベースのライブラリ、リアルデータのプロットもできそう。
+
+　D3は直接DOMを更新するので、仮想DOMを使うREACTとは相性が悪いらしい。
+　そのせいか、本家に比べてREACTのラッパーはスターが少ない。
+
+
+Chart.js(HTML5)
+✖Chart.js（★36,079）
+  https://www.chartjs.org/
+    HTML5のCANVASタグを使用
+    REACTからは使えない
+
+✖react-chartjs-2（★1,002）
+  https://github.com/jerairrest/react-chartjs-2
+    chart.jsのREACTラッパー
+    HTML5限定は避けたい
+　　
+
+plotly
+〇plotly（★8,017）
+  https://plot.ly/javascript/streaming/
+  　動作イメージは問題なさそう
+  　機能も豊富だし良いかもしれない。
+  　Zoomもなんとかなりそう
+
+C3
+✖C3.js（★7,599）
+  http://c3js.org/samples/api_flow.html
+    リアルタイムデータ変更は可能だが、データの渡し方が理解不能。
+    ちょっとデータの流し込みと動作が想定と違うかもしれない
+
+react-timeseries-charts
+△react-timeseries-charts（★324）
+  https://github.com/esnet/react-timeseries-charts
+    動きが速くて格好いい。でもどうしてもRender()のエラーが取れない
+
+
+react-rt-chart
+△react-rt-chart（★32）
+  https://github.com/emilmork/react-rt-chart
+    X軸とグラフの動きがずれているのがあまり良くないが、組み込みは楽そう
+
+有償
+
+✖zingchart
+  https://www.zingchart.com/gallery/chart/#!live-feed-chart
+  　なんとかなりそうな気がするが有償なので✖
