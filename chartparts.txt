@@ -1,0 +1,12 @@
+<BarChart
+    axis="y"
+    series={perc90Series}
+    style={fiveMinuteStyle}
+    columns={["value"]}
+/>
+<BarChart
+    axis="y"
+    series={perc50Series}
+    style={fiveMinuteStyle}
+    columns={["value"]}
+/>
