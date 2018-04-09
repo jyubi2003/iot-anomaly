@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import Ring from "ringjs";
-import Modal from 'react-modal';
 
 import {
   TimeSeries,
@@ -29,46 +28,18 @@ import styler from "./styler.js";
 const sec = 1000;
 const minute = 60 * sec;
 const hours = 60 * minute;
+const day = 24 * hours;
 const rate = 80;
 
-class RealtimeChart extends Component {
-  static displayName = "AggregatorDemo";
+class WeeklyBarChart extends Component {
+  static displayName = "WeeklyBarChart";
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      time: new Date(2015, 0, 1),
-      events: new Ring(600),
-      percentile50Out: new Ring(300),
-      percentile90Out: new Ring(300),
-      modalIsOpen: false,
-      graphBGColor: '#fff'
-    };
-
-    this.openModal = this.openModal.bind(this);
-    this.afterOpenModal = this.afterOpenModal.bind(this);
-    this.closeModal = this.closeModal.bind(this);
-
-  }
-
-  openModal() {
-    this.setState({modalIsOpen: true});
-  }
-
-  afterOpenModal() {
-    // references are now sync'd and can be accessed.
-    this.subtitle.style.color = '#f00';
-  }
-
-  closeModal() {
-    this.setState({modalIsOpen: false});
-    this.setState({graphBGColor: '#f00'});
-  }
-
-  doError() {
-    this.setState({graphBGColor: '#f77'});
-  }
+  state = {
+    time: new Date(2015, 0, 1),
+    events: new Ring(600),
+    percentile50Out: new Ring(300),
+    percentile90Out: new Ring(300)
+  };
 
   getNewEvent = t => {
     const base = Math.sin(t.getTime() / 10000000) * 350 + 400;
@@ -145,22 +116,9 @@ class RealtimeChart extends Component {
     const scatterStyle = {
         value: {
             normal: {
-                opacity: 0.5,
-                background: this.state.graphBGColor
+                opacity: 0.5
             }
         }
-    };
-
-    // Style for Modal
-    const customStyles = {
-      content : {
-        top                   : '50%',
-        left                  : '50%',
-        right                 : 'auto',
-        bottom                : 'auto',
-        marginRight           : '-50%',
-        transform             : 'translate(-50%, -50%)'
-      }
     };
 
     //
@@ -197,8 +155,19 @@ class RealtimeChart extends Component {
 
     // Charts (after a certain amount of time, just show hourly rollup)
     const charts = (
-        <Charts>
-            <LineChart axis="y" series={eventSeries} style={scatterStyle} />
+      <Charts>
+        <BarChart
+            axis="y"
+            series={perc90Series}
+            style={fiveMinuteStyle}
+            columns={["value"]}
+        />
+        <BarChart
+            axis="y"
+            series={perc50Series}
+            style={fiveMinuteStyle}
+            columns={["value"]}
+        />
         </Charts>
     );
 
@@ -216,46 +185,12 @@ class RealtimeChart extends Component {
 
     return (
       <div className="graph">
-        <button onClick={this.openModal}>Do Open</button>
-        <Modal
-          isOpen={this.state.modalIsOpen}
-          onAfterOpen={this.afterOpenModal}
-          onRequestClose={this.closeModal}
-          style={customStyles}
-          contentLabel="Example Modal"
-        >
-          <h1 ref={subtitle => this.subtitle = subtitle}>Abnormal prediction</h1>
-          <hr />
-          <form>
-            <div id="nav">
-              <table>
-                  <tr>
-                    <td><img className="dlg-img" src="./wave1.png" /></td>
-                    <td className="dlg-desc">正常</td>
-                  </tr>
-                  <tr>
-                    <td><img className="dlg-img" src="./wave2.png" /></td>
-                    <td className="dlg-desc"><a href="Detail">異常A(90%)</a></td>
-                  </tr>
-                  <tr>
-                    <td><img className="dlg-img" src="./wave3.png" /></td>
-                    <td className="dlg-desc"><a href="Detail2">異常B(70%)</a></td>
-                  </tr>
-              </table>
-            </div>
-            <button onClick={this.closeModal}>close</button>
-          </form>
-        </Modal>
         <Resizable>
-          <ChartContainer
-            timeRange={timeRange}
-            enablePanZoom={true}
-            onTimeRangeChanged={this.openModal}
-          >
+          <ChartContainer timeRange={timeRange}>
             <ChartRow height="300">
               <YAxis
                 id="y"
-                label="Sensor Detected Value "
+                label="Value"
                 min={0}
                 max={1500}
                 width="70"
@@ -270,4 +205,4 @@ class RealtimeChart extends Component {
   }
 }
 
-export default RealtimeChart;
+export default WeeklyBarChart;

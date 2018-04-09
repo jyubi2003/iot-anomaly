@@ -9,9 +9,9 @@ class Abstruct extends React.Component {
   render() {
     return (
       <div className="abstruct">
-        異常Aの検索結果10件中1 - 10件目(0.07秒）<br></br>
-        検索ワード：【異常A】
-        <hr></hr>
+      異常Bの検索結果10件中1 - 10件目(0.07秒）<br></br>
+      検索ワード：【異常B】
+      <hr></hr>
       </div>
     );
   }
@@ -22,7 +22,7 @@ class Specification extends React.Component {
   render() {
     return (
       <div className="specification">
-        <p>遺伝的アルゴリズムを用いた製品設計解探索方法および探索システム</p>
+      <p>遺伝的アルゴリズムを用いた製品設計システムおよび製品設計方法</p>
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import React from 'react';
 import RealtimeChart from './RealtimeChart';
+import WeeklyBarChart from './WeeklyBarChart';
 
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 // eslint-disable-next-line
@@ -156,26 +157,48 @@ class GraphArea extends React.Component {
     // Actionに現在の週とクリック時のハンドラを渡す
     return (
       <div className="graph-area">
-        <div className="graph-low">
+        <div className="graph-row">
           <RealtimeChart />
           <RealtimeChart />
           <RealtimeChart />
         </div>
-        <div className="graph-low">
+        <div className="graph-row">
           <RealtimeChart />
           <div className="meters">
-            <div className="meter">
-              <ReactSpeedometer
-                //fluidWidth={true}
-              />
+            <div className="meter-row">
+              <div className="meter">
+                <ReactSpeedometer
+                  width={200}
+                  height={150}
+                  //fluidWidth={true}
+                />
+              </div>
+              <div className="meter">
+                <ReactSpeedometer
+                  width={200}
+                  height={150}
+                  //fluidWidth={true}
+                />
+              </div>
             </div>
-            <div className="meter">
-              <ReactSpeedometer
-                //fluidWidth={true}
-              />
+            <div className="meter-row">
+              <div className="meter">
+                <ReactSpeedometer
+                  width={200}
+                  height={150}
+                  //fluidWidth={true}
+                />
+              </div>
+              <div className="meter">
+                <ReactSpeedometer
+                  width={200}
+                  height={150}
+                  //fluidWidth={true}
+                />
+              </div>
             </div>
           </div>
-          <RealtimeChart />
+          <WeeklyBarChart />
         </div>
       </div>
     );
@@ -306,7 +329,7 @@ class IotDemo extends React.Component {
       <MuiThemeProvider>
         <div className="iot-demo">
           <AppBar
-            title="IoT 異常検知"
+            title="IoT Data Anomaly Detection"
           />
           <div className="contents">
             <Selections

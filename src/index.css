@@ -120,7 +120,7 @@ img {
   /* background-color:#77ff77; */
 }
 
-.graph-low {
+.graph-row {
   margin:     0.3vw;
   padding:    0px;
   /* width:      63vw; */
@@ -135,6 +135,8 @@ img {
 
 .graph {
   margin:     0.3vw;
+  padding-top:  0.8vh;
+  padding-left:  0.8vw;
   -webkit-flex-grow: 1;
   flex-grow: 1;
   /* height:     25vh; */
@@ -144,25 +146,57 @@ img {
 
 .meters {
   margin:     0.3vw;
+  padding-top:  1.5vh;
+  padding-left:  0.8vw;
   -webkit-flex-grow: 1;
   flex-grow: 1;
   /* height:     25vh; */
-  display:  -webkit-flex;
-  display:    flex;
   -webkit-justify-content: flex-start;
   justify-content: flex-start;
   /* border:     1px solid #999; */
    background-color:#ffffff;
 }
 
+.meter-row {
+  margin:     0.3vw;
+  /* height:     25vh; */
+  -webkit-justify-content: flex-start;
+  justify-content: flex-start;
+  vertical-align: middle;
+  display: block;
+  /* border:     1px solid #999; */
+  /* background-color:#ffffff; */
+}
+
 .meter {
   margin:     0.3vw;
-  padding-top:  8vh;
-  -webkit-flex-grow: 1;
-  flex-grow: 1;
-  /* height:     25vh; */
+  padding-top:  0.8vh;
+  padding-left:  0.8vw;
   vertical-align: middle;
   display: table-cell;
+  /* border:     1px solid #999; */
+  /* background-color:#ffffff; */
+}
+
+.dlg-img {
+  margin:       0.3vw;
+  padding-top:  0.2vh;
+  width:        10.0vw;
+  height:       8.0vh;
+  vertical-align: middle;
+  display:        inline;
+  border:     1px solid #999;
+  /* background-color:#ffffff; */
+}
+
+.dlg-desc {
+  margin:       0.3vw;
+  padding-top:  0.2vh;
+  width:        50.0vw;
+  height:       8.0vh;
+  vertical-align: middle;
+  display:        inline;
+  font: bold large/150% "Meiryo UI";
   /* border:     1px solid #999; */
   /* background-color:#ffffff; */
 }
